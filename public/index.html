@@ -1,20 +1,93 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"><title>Tarefas</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>Tarefas</title>
+</head>
+
 <body>
   <h1>Lista de Tarefas</h1>
+
   <form id="form">
     <input id="titulo" placeholder="Nova tarefa" required>
     <button type="submit">Adicionar</button>
   </form>
+
   <ul id="lista"></ul>
+
   <p id="erro" style="color:red"></p>
 
   <script>
     const api = 'http://localhost:3000/api/tarefas';
-    // TODO: ao carregar a página, busca as tarefas com fetch e exibe na lista
-    // TODO: ao submeter o formulário, envia POST com { titulo } e atualiza a lista
-    // TODO: erros de rede/API devem ser exibidos no elemento #erro
+
+    const form = document.getElementById('form');
+    const titulo = document.getElementById('titulo');
+    const lista = document.getElementById('lista');
+    const erro = document.getElementById('erro');
+
+    async function carregarTarefas() {
+      erro.textContent = '';
+
+      try {
+        const resposta = await fetch(api);
+
+        if (!resposta.ok) {
+          throw new Error(`Erro da API: ${resposta.status}`);
+        }
+
+        const tarefas = await resposta.json();
+
+        lista.innerHTML = '';
+
+        tarefas.forEach(tarefa => {
+          const item = document.createElement('li');
+          item.textContent = tarefa.titulo;
+          lista.appendChild(item);
+        });
+      } catch (e) {
+        erro.textContent = `Erro ao carregar tarefas: ${e.message}`;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      erro.textContent = '';
+
+      try {
+        const resposta = await fetch(api, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            titulo: titulo.value
+          })
+        });
+
+        if (!resposta.ok) {
+          const dados = await resposta.json().catch(() => ({}));
+
+          throw new Error(
+            dados.erro || `Erro da API: ${resposta.status}`
+          );
+        }
+
+        const novaTarefa = await resposta.json();
+
+        const item = document.createElement('li');
+        item.textContent = novaTarefa.titulo;
+
+        lista.appendChild(item);
+
+        titulo.value = '';
+        titulo.focus();
+      } catch (e) {
+        erro.textContent = `Erro ao adicionar tarefa: ${e.message}`;
+      }
+    });
+
+    carregarTarefas();
   </script>
 </body>
 </html>
